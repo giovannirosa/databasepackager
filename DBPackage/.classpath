@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="resources"/>
+	<classpathentry kind="lib" path="resources/jfxrt.jar"/>
+	<classpathentry kind="lib" path="resources/svnkit-1.7.8.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="https://svnkit.com/javadoc/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="resources/sequence-library-1.0.2.jar"/>
+	<classpathentry kind="lib" path="resources/sqljet-1.1.6.jar"/>
+	<classpathentry kind="lib" path="resources/antlr-runtime-3.4.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
