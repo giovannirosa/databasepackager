@@ -8,7 +8,7 @@
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
-<?import controller.AuthControl?>
+<?import view.control.AuthControl?>
 
 <DialogPane fx:id="loginPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" xmlns="http://javafx.com/javafx/8.0.60" xmlns:fx="http://javafx.com/fxml/1">
     <content>
@@ -31,6 +31,6 @@
     </content>
     <buttonTypes>
         <AuthControl fx:id="authBut" fx:constant="AUTH" />
-        <ButtonType fx:constant="CANCEL" />
+        <ButtonType fx:id="cancelBut" fx:constant="CANCEL" />
     </buttonTypes>
 </DialogPane>

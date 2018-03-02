@@ -1,4 +1,4 @@
-package controller;
+package view.control;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -15,6 +15,7 @@ import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.stage.Stage;
+import view.util.Factory;
 
 public class AuthControl {
 	
@@ -28,6 +29,8 @@ public class AuthControl {
     PasswordField passTxt;
     @FXML
     ButtonType authBut;
+    @FXML
+    ButtonType cancelBut;
     
     ViewControl vControl;
     
@@ -38,7 +41,7 @@ public class AuthControl {
     public void showAuthDialog() {
     	Dialog<ButtonType> dialog = new Dialog<>();
     	dialog.setTitle("Authentication");
-    	FXMLLoader dialogLoader = new FXMLLoader(getClass().getResource("/view/Dialog2.fxml"));
+    	FXMLLoader dialogLoader = new FXMLLoader(getClass().getResource("/view/Auth.fxml"));
     	dialogLoader.setController(this);
     	try {
 			dialog.setDialogPane(dialogLoader.load());
@@ -46,7 +49,11 @@ public class AuthControl {
 			e.printStackTrace();
 		}
     	dialog.getDialogPane().setHeaderText("Please enter valid svn user and password:");
+    	Button cBut = (Button) dialog.getDialogPane().lookupButton(cancelBut);
+    	cBut.setGraphic(Factory.getIcon("close.png", 20));
+    	cBut.translateXProperty().bind(cBut.prefWidthProperty().divide(-1.05));
     	Button authBut = (Button) dialog.getDialogPane().lookupButton(getLoginButton());
+    	authBut.setGraphic(Factory.getIcon("auth.png", 20));
     	authBut.sceneProperty().addListener((observable, oldValue, newScene) -> {
     	    if (newScene != null) {
     	        newScene.getAccelerators().put(

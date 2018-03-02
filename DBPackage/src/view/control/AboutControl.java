@@ -1,4 +1,4 @@
-package controller;
+package view.control;
 
 import java.io.IOException;
 
@@ -21,6 +21,7 @@ public class AboutControl {
 		stage.initOwner(owner);
 		stage.initStyle(StageStyle.UTILITY);
 		stage.setAlwaysOnTop(true);
+		stage.setResizable(false);
 		
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/About.fxml"));
 		loader.setController(this);

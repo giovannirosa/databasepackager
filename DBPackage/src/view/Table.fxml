@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import view.util.CheckBoxTableCellFactory?>
+<?import model.TableModel?>
+
+<TableView editable="true" fx:id="table" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/9.0.1">
+  <columns>
+    <TableColumn text="">
+    </TableColumn>
+    <TableColumn text="Update">
+    	<cellValueFactory><PropertyValueFactory property="number" />
+        </cellValueFactory>
+    </TableColumn>
+      <TableColumn text="Content">
+         <columns>
+            <TableColumn text="Task">
+              <cellValueFactory><PropertyValueFactory property="tasks" />
+        	  </cellValueFactory>
+        	</TableColumn>
+            <TableColumn text="File">
+        	</TableColumn>
+         </columns>
+      </TableColumn>
+      <TableColumn text="Revision">
+        <cellValueFactory><PropertyValueFactory property="revision" />
+        </cellValueFactory>
+      </TableColumn>
+      <TableColumn text="Author">
+        <cellValueFactory><PropertyValueFactory property="author" />
+        </cellValueFactory>
+      </TableColumn>
+      <TableColumn text="Date">
+        <cellValueFactory><PropertyValueFactory property="date" />
+        </cellValueFactory>
+      </TableColumn>
+  </columns>
+</TableView>

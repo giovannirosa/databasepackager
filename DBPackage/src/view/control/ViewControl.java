@@ -1,30 +1,29 @@
-package controller;
+package view.control;
 
 import java.io.File;
-import java.util.List;
-import org.tmatesoft.svn.core.SVNDirEntry;
-
+import java.io.IOException;
+import java.net.URL;
+import controller.PackageControl;
 import javafx.application.Platform;
 import javafx.beans.property.StringProperty;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.BorderPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import view.UpdatePane;
 
 public class ViewControl {
 	private Stage stage;
 	
-	@FXML private ScrollPane scrollPane;
-	@FXML private VBox vPane;
+	@FXML private BorderPane mainPane;
 	
     @FXML private TextField textField;
     @FXML private Button searchBut;
@@ -32,9 +31,39 @@ public class ViewControl {
     @FXML private Button exitBut;
     @FXML private MenuItem aboutMenuItem;
 
+    TableControl tControl = new TableControl();
     AuthControl aControl = new AuthControl(this);
     LoadingControl lControl = new LoadingControl(stage);
     AboutControl abControl = new AboutControl(stage);
+    
+    public ViewControl(Stage stage) {
+    	URL arquivoFXML = getClass().getResource(
+				"/view/DBPackage.fxml");
+		FXMLLoader fxmlLoader = new FXMLLoader(arquivoFXML);
+        fxmlLoader.setController(this);
+
+        try {
+            fxmlLoader.load();
+        } catch (IOException exception) {
+            throw new RuntimeException(exception);
+        }
+        
+        setActions();
+        setText("https://jenova.smgtec.com/svn/repos2/Database/NGAI-RELEASES/009_NGAI2017.1/Baseline/FACTSINT");
+        
+        this.stage = stage;
+        Scene scene = new Scene(fxmlLoader.getRoot());
+        
+        mainPane.prefHeightProperty().bind(scene.heightProperty());
+        mainPane.prefWidthProperty().bind(scene.widthProperty());
+        
+        stage.setScene(scene);
+        stage.setTitle("Database Packager");
+        stage.setMinHeight(800);
+        stage.setMinWidth(600);
+        stage.getIcons().add(new Image(getClass().getResource("/compressor.png").toExternalForm()));
+        stage.show();
+    }
     
     public void setStage(Stage stage) {
     	this.stage = stage;
@@ -49,7 +78,7 @@ public class ViewControl {
     	    	Platform.runLater(new Runnable() {
     	    		@Override
     	    		public void run() {
-    	    			initGrid();
+    	    			tControl.populateTable();
     	    			genBut.setDisable(false);
     	    		}
     	    	});  
@@ -76,6 +105,7 @@ public class ViewControl {
     }
 
     public void setActions() {
+    	mainPane.setCenter(tControl.getTable());
     	aboutMenuItem.setOnAction(e -> abControl.show());
     	exitBut.setOnAction(e -> {
     		stage.close();
@@ -106,42 +136,6 @@ public class ViewControl {
     		}
     	});
     	genBut.setDisable(true);
-    }
-    
-    private void createButtons(List<SVNDirEntry> childs, UpdatePane uPane) {
-    	childs.forEach(c -> {
-    		Button but = null;
-    		switch (c.getName()) {
-			case "RELEASE_NOTES.txt":
-				but = new Button();
-				but.setText("Release Notes");
-				break;
-			case "ChangeLog.doc":
-				but = new Button();
-				but.setText("Change Log");
-				break;
-			default:
-				break;
-    		}
-    		if (but!=null) {
-    			but.setOnAction(e -> {
-    				PackageControl.exportOpenFromSvn(c);
-    			});
-    			uPane.addButton(but);
-    		}
-    	});
-    }
-
-    public void initGrid() {
-    	vPane.getChildren().clear();
-    	PackageControl.getMap().forEach((k,v) -> {
-    		UpdatePane uPane = new UpdatePane();
-    		uPane.setNumber(k);
-    		uPane.setSelected(true);
-    		uPane.setModel(v);
-    		createButtons(v.getChilds(),uPane);
-    		vPane.getChildren().add(uPane);
-    	});
     }
 
     public String getText() {

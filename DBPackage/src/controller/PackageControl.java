@@ -9,6 +9,8 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -20,6 +22,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import model.UpdateModel;
+import view.control.ViewControl;
 
 import org.tmatesoft.svn.core.SVNAuthenticationException;
 import org.tmatesoft.svn.core.SVNDepth;
@@ -269,7 +272,8 @@ public class PackageControl {
 		int i = Integer.valueOf(n.substring(n.length()-3, n.length()));
 		List<SVNDirEntry> childs = entriesStream(e.getName()).collect(Collectors.toList());
 		
-		UpdateModel u = new UpdateModel(i,n,true,e,childs);
+		UpdateModel u = new UpdateModel(i,n,true,e.getRevision(),"",e.getAuthor(),
+				LocalDateTime.ofInstant(e.getDate().toInstant(), ZoneId.systemDefault()),e,childs);
 		map.put(i, u);
 	}
 }
