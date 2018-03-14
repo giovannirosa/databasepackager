@@ -2,6 +2,7 @@ package view.control;
 
 import java.io.IOException;
 
+import controller.DBPackage;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -24,7 +25,7 @@ public class LoadingControl {
 		stage.initStyle(StageStyle.UTILITY);
 		stage.setAlwaysOnTop(true);
 		
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/Loading.fxml"));
+		FXMLLoader loader = new FXMLLoader(DBPackage.class.getClassLoader().getResource("Loading.fxml"));
 		loader.setController(this);
     	try {
     		stage.setScene(new Scene(loader.load()));

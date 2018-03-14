@@ -4,83 +4,166 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.List;
 
-import org.tmatesoft.svn.core.SVNDirEntry;
-
+import controller.DBPackage;
 import controller.PackageControl;
+import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.control.Button;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableColumn.CellDataFeatures;
-import javafx.scene.control.TableView;
-import javafx.scene.control.cell.CheckBoxTableCell;
+import javafx.scene.control.TreeTableColumn.CellDataFeatures;
+import javafx.scene.control.TreeTableRow;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeTableCell;
+import javafx.scene.control.TreeTableColumn;
+import javafx.scene.control.TreeTableView;
+import javafx.scene.control.cell.CheckBoxTreeTableCell;
 import javafx.util.Callback;
 import model.TableModel;
 
 public class TableControl {
 	
-	@FXML private TableView<TableModel> table;
-	final ObservableList<TableModel> items = FXCollections.observableArrayList();
+	@FXML private TreeTableView<TableModel> table;
+	final TreeItem<TableModel> root = new TreeItem<>();
+	
+	private static final PseudoClass LEAF = PseudoClass.getPseudoClass("leaf");
 
-	public TableView<TableModel> getTable() {
+	public TreeTableView<TableModel> getTable() {
 		return table;
 	}
 
 	@SuppressWarnings("unchecked")
 	public TableControl() {
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/Table.fxml"));
+		FXMLLoader loader = new FXMLLoader(DBPackage.class.getClassLoader().getResource("Table.fxml"));
 		loader.setController(this);
 		try {
 			loader.load();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		ObservableList<TableColumn<TableModel, ?>> cols = table.getColumns();
-		TableColumn< TableModel, Boolean > loadedColumn = (TableColumn<TableModel, Boolean>) cols.get(0);
+		ObservableList<TreeTableColumn<TableModel, ?>> cols = table.getColumns();
+		TreeTableColumn< TableModel, Boolean > loadedColumn = (TreeTableColumn<TableModel, Boolean>) cols.get(0);
 		loadedColumn.setCellValueFactory(
 				new Callback<CellDataFeatures<TableModel,Boolean>,ObservableValue<Boolean>>(){
 					@Override public
 					ObservableValue<Boolean> call( CellDataFeatures<TableModel,Boolean> p ){
-						return p.getValue().getSelected(); }});
+						TableModel m = p.getValue().getValue();
+						if (m==null)
+							return null;
+						else
+							return m.getSelected(); 
+					}});
 		loadedColumn.setCellFactory(
-				new Callback<TableColumn<TableModel,Boolean>,TableCell<TableModel,Boolean>>(){
+				new Callback<TreeTableColumn<TableModel,Boolean>,TreeTableCell<TableModel,Boolean>>(){
 					@Override public
-					TableCell<TableModel,Boolean> call( TableColumn<TableModel,Boolean> p ){
-						return new CheckBoxTableCell<>(); }});
-		TableColumn< TableModel, LocalDateTime > dateCol = (TableColumn<TableModel, LocalDateTime>) cols.get(5);
-		dateCol.setCellFactory(tc -> new TableCell<TableModel, LocalDateTime>() {
-		    @Override
-		    protected void updateItem(LocalDateTime date, boolean empty) {
-		        super.updateItem(date, empty);
-		        if (empty) {
+					TreeTableCell<TableModel,Boolean> call( TreeTableColumn<TableModel,Boolean> p ){
+						CheckBoxTreeTableCell<TableModel, Boolean> cell = new CheckBoxTreeTableCell<>();
+						cell.getStyleClass().add("hide-non-leaf");
+						return cell; 
+					}});
+		CheckBox selAll = new CheckBox();
+		selAll.setSelected(true);
+		selAll.setOnAction(e -> {
+			root.getChildren().forEach(child -> {
+				if (selAll.isSelected())
+					child.getValue().setSelected(true);
+				else
+					child.getValue().setSelected(false);
+			});
+		});
+		loadedColumn.setGraphic(selAll);
+		TreeTableColumn< TableModel, LocalDateTime > dateCol = (TreeTableColumn<TableModel, LocalDateTime>) cols.get(5);
+		dateCol.setCellFactory(tc -> new TreeTableCell<TableModel, LocalDateTime>() {
+			@Override
+			protected void updateItem(LocalDateTime date, boolean empty) {
+				super.updateItem(date, empty);
+				if (empty || date==null) {
 		            setText(null);
 		        } else {
 		            setText(date.format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)));
 		        }
 		    }
 		});
+		TreeTableColumn< TableModel, Integer > updateCol = (TreeTableColumn<TableModel, Integer>) cols.get(1);
+		updateCol.setCellFactory(tc -> new TreeTableCell<TableModel, Integer>() {
+			@Override
+			protected void updateItem(Integer up, boolean empty) {
+				super.updateItem(up, empty);
+				if (empty || up==null || up == 0) {
+		            setText(null);
+		        } else {
+		            setText(up.toString());
+		        }
+		    }
+		});
+		TreeTableColumn< TableModel, Long > revCol = (TreeTableColumn<TableModel, Long>) cols.get(3);
+		revCol.setCellFactory(tc -> new TreeTableCell<TableModel, Long>() {
+			@Override
+			protected void updateItem(Long rev, boolean empty) {
+				super.updateItem(rev, empty);
+				if (empty || rev==null || rev == 0) {
+		            setText(null);
+		        } else {
+		            setText(rev.toString());
+		        }
+		    }
+		});
 
-		configCol(cols.get(0),25,25,false); // sel
-		configCol(cols.get(1),50,70,true); // number
-		configCol(cols.get(2).getColumns().get(0),100,800,true); // tasks
-		configCol(cols.get(2).getColumns().get(1),50,100,true); // file
-		configCol(cols.get(3),45,200,true); // rev
-		configCol(cols.get(4),110,200,true); // aut
-		configCol(cols.get(5),80,400,true); // date
+		configCol(cols.get(0),50,50,false); // sel
+		configCol(cols.get(1),50,50,false); // number
+		configCol(cols.get(2),100,3000,true); // tasks
+		configCol(cols.get(3),60,60,false); // rev
+		configCol(cols.get(4),110,110,false); // aut
+		configCol(cols.get(5),110,110,false); // date
 		
-		table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
-		table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+//		descCol = (TreeTableColumn<TableModel, String>) cols.remove(2);
+		table.setRowFactory(view -> new TreeTableRow<TableModel>() {
+
+		    {
+		        ChangeListener<Boolean> listener = (observable, oldValue, newValue) -> {
+		            pseudoClassStateChanged(LEAF, newValue);
+		        };
+		        treeItemProperty().addListener((observable, oldItem, newItem) -> {
+		            if (oldItem != null) {
+		                oldItem.leafProperty().removeListener(listener);
+		                setPrefHeight(22);
+		            }
+		            if (newItem != null) {
+		                newItem.leafProperty().addListener(listener);
+		                listener.changed(null, null, newItem.isLeaf());
+		                String desc = newItem.getValue().getDesc();
+		                if (desc!=null && !desc.equals("")) {
+		                	int x = desc.split("\n").length;
+		                	setPrefHeight(22*x);
+		                }
+		            } else {
+		                listener.changed(null, null, Boolean.FALSE);
+		            }
+		        });
+		    }
+
+		});
+		
+		table.setColumnResizePolicy(TreeTableView.UNCONSTRAINED_RESIZE_POLICY);
+		table.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
 		table.requestLayout();
-		table.setItems(items);
+		root.setExpanded(true);
+		table.setRoot(root);
+		table.setShowRoot(false);
 	}
 	
-	private void configCol(TableColumn<TableModel,?> col, double min, double max, boolean resize) {
+	public void expandAll() {
+		root.getChildren().forEach(child -> child.setExpanded(true));
+	}
+	
+	public void collapseAll() {
+		root.getChildren().forEach(child -> child.setExpanded(false));
+	}
+	
+	private void configCol(TreeTableColumn<TableModel,?> col, double min, double max, boolean resize) {
 		col.setMinWidth(min);
 		col.setMaxWidth(max);
 		col.setResizable(resize);
@@ -88,9 +171,22 @@ public class TableControl {
 	
 	public void populateTable() {
 		PackageControl.getMap().forEach((k,v) -> {
-			TableModel tModel = new TableModel(true,v.getNumber(),v.getTasks(),v.getRevision(),v.getAuthor(),v.getDate());
-			
-			items.add(tModel);
+			String[] msg = v.getTasks().split("\n");
+			String d = msg.length>1 ? msg[0]+" [...]":msg[0];
+			TreeItem<TableModel> item = new TreeItem<>(new TableModel(true,v.getNumber(),d,v.getRevision(),v.getAuthor(),v.getDate()));
+			TreeItem<TableModel> desc = new TreeItem<>(new TableModel(v.getTasks()));
+			item.getChildren().add(desc);
+			item.expandedProperty().addListener((observable, oldItem, newItem) -> {
+				if (!oldItem && newItem)
+					item.getValue().setDesc("");
+				if (oldItem && !newItem)
+					item.getValue().setDesc(d);
+//				if (table.getColumns().contains(descCol) && root.getChildren().stream().noneMatch(model -> model.isExpanded()))
+//					table.getColumns().remove(descCol);
+//				else if (!table.getColumns().contains(descCol) && root.getChildren().stream().anyMatch(model -> model.isExpanded()))
+//					table.getColumns().add(2, descCol);
+			});
+			root.getChildren().add(item);
     	});
 	}
 	

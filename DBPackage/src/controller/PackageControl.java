@@ -2,27 +2,24 @@ package controller;
 
 import java.awt.Desktop;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import model.UpdateModel;
 import view.control.ViewControl;
+import view.util.Factory;
 
 import org.tmatesoft.svn.core.SVNAuthenticationException;
 import org.tmatesoft.svn.core.SVNDepth;
@@ -30,7 +27,6 @@ import org.tmatesoft.svn.core.SVNDirEntry;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.auth.BasicAuthenticationManager;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.internal.io.dav.DAVRepositoryFactory;
 import org.tmatesoft.svn.core.io.SVNRepository;
@@ -81,7 +77,7 @@ public class PackageControl {
 		map.clear();
 		DAVRepositoryFactory.setup();
 		try {
-			ISVNAuthenticationManager authManager = new BasicAuthenticationManager(user , pass);
+			ISVNAuthenticationManager authManager = SVNWCUtil.createDefaultAuthenticationManager(user, pass.toCharArray());
 			SVNURL test = SVNURL.parseURIEncoded(url);
 			
 			repository = SVNRepositoryFactory.create(test, null);
@@ -92,7 +88,7 @@ public class PackageControl {
 					SVNWCUtil.createDefaultOptions(true),authManager);
 			
 			tempDir = Files.createTempDirectory("DBPackage").toFile();
-			Runtime.getRuntime().addShutdownHook(new Thread(() -> deleteFolder(tempDir.toPath())));
+			Runtime.getRuntime().addShutdownHook(new Thread(() -> Factory.deleteFolder(tempDir.toPath())));
 		    System.out.println(tempDir.toPath().getFileName().toString()+" created!");
 			
 			System.out.println( "Repository Root: " + repository.getRepositoryRoot( true ) );
@@ -111,26 +107,9 @@ public class PackageControl {
 
 			System.out.println( "Repository latest revision: " + repository.getLatestRevision() );
 		} catch (SVNAuthenticationException a) {
-			Platform.runLater(new Runnable() {
-	    		@Override
-	    		public void run() {
-	    			ViewControl.showMessage("Authentication Failed", "Authentication failed!");
-	    		}
-	    	});
+			throw new RuntimeException(a);
 		} catch (SVNException | IOException e1) {
 			e1.printStackTrace();
-		}
-	}
-	
-	private static void deleteFolder(Path p) {
-		try {
-			Files.walk(p, FileVisitOption.FOLLOW_LINKS)
-			.sorted(Comparator.reverseOrder())
-			.map(Path::toFile)
-			.peek(System.out::println)
-			.forEach(File::delete);
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
 	
@@ -154,7 +133,7 @@ public class PackageControl {
 		}
 	}
 
-	public static void exportOpenFromSvn(SVNDirEntry e) {
+	public static void exportOpenFromSvn(SVNDirEntry e, boolean open) {
 		try {
 			String u = e.getURL().removePathTail().toString();
 			Path d = tempDir.toPath().resolve(
@@ -166,7 +145,7 @@ public class PackageControl {
 				Files.createFile(f);
 				doExport(e, f.toFile());
 			}
-			if (Desktop.isDesktopSupported())
+			if (open && Desktop.isDesktopSupported())
 				Desktop.getDesktop().open(f.toFile());
 		} catch (IOException | SVNException e1) {
 			e1.printStackTrace();
@@ -203,7 +182,7 @@ public class PackageControl {
 		} catch (SVNException e1) {
 			e1.printStackTrace();
 		}
-		return entries.parallelStream();
+		return entries.stream();
 	}
 	
 	public static void createZip(File target) {
@@ -211,13 +190,13 @@ public class PackageControl {
 			Path d = tempDir.toPath().resolve(v.getEntry().getName());
 			if (!v.isSelected()) {
 				if (Files.exists(d))
-					deleteFolder(d);
+					Factory.deleteFolder(d);
 			} else {
 				try {
 					if (Files.notExists(d)) {
 						Files.createDirectory(d);
 					} else {
-						deleteFolder(d);
+						Factory.deleteFolder(d);
 						Files.createDirectory(d);			
 					}
 				} catch (IOException e) {
@@ -228,7 +207,7 @@ public class PackageControl {
 		});
 		try (FileOutputStream fos = new FileOutputStream(target);
 				ZipOutputStream zipOut = new ZipOutputStream(fos);) {
-		        zipFile(tempDir, tempDir.getName(), zipOut);
+		        Factory.zipFile(tempDir, tempDir.getName(), zipOut);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -240,40 +219,53 @@ public class PackageControl {
     	});
 	}
 	
-	private static void zipFile(File fileToZip, String fileName, ZipOutputStream zipOut) {
-        if (fileToZip.isHidden()) {
-            return;
-        }
-        if (fileToZip.isDirectory()) {
-            File[] children = fileToZip.listFiles();
-            for (File childFile : children) {
-                zipFile(childFile, fileName + "/" + childFile.getName(), zipOut);
-            }
-            return;
-        }
-		try (FileInputStream fis = new FileInputStream(fileToZip)) {
-			ZipEntry zipEntry = new ZipEntry(fileName);
-	        zipOut.putNextEntry(zipEntry);
-	        byte[] bytes = new byte[1024];
-	        int length;
-	        while ((length = fis.read(bytes)) >= 0) {
-	            zipOut.write(bytes, 0, length);
-	        }
+	private static boolean testLine(String l, String n) {
+		if (l.equals("=========") || l.equals(n) || l.trim().equals(""))
+			return false;
+		return true;
+	}
+	
+	private static Stream<String> linesStream(Path local, String file) {
+		Stream<String> s = null;
+		try {
+			Path p = local.resolve(Paths.get(file));
+			if (p.toFile().exists())
+				s = Files.lines(p);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-    }
+		return s;
+	}
 	
 	private static void collectModels(SVNDirEntry e) {
-//		System.out.println( e.getName( ) + 
-//				" ( author: '" + e.getAuthor( ) + "'; revision: " + e.getRevision( ) + 
-//				"; date: " + e.getDate( ) + ")" );
 		String n = e.getName();
 		int i = Integer.valueOf(n.substring(n.length()-3, n.length()));
-		List<SVNDirEntry> childs = entriesStream(e.getName()).collect(Collectors.toList());
 		
-		UpdateModel u = new UpdateModel(i,n,true,e.getRevision(),"",e.getAuthor(),
-				LocalDateTime.ofInstant(e.getDate().toInstant(), ZoneId.systemDefault()),e,childs);
+		List<SVNDirEntry> childs = entriesStream(e.getName()).collect(Collectors.toList());
+		childs.parallelStream().filter(f -> f.getName().equals("RELEASE_NOTES.txt")).findFirst().ifPresent(g -> exportOpenFromSvn(g,false));
+		
+		Path local = tempDir.toPath().resolve(Paths.get(e.getName()));
+		Stream<String> lines = linesStream(local, "RELEASE_NOTES.txt");
+		String desc = "";
+		if (lines!=null)
+			desc = lines.filter(l -> testLine(l,e.getName()))
+						.reduce("", (l1,l2) -> {
+							if (l2.length() > 180) {
+								String[] a = l2.split("(?<=\\G.{180})");
+								l2 = "";
+								for (String h : a) {
+									if (!l2.isEmpty())
+										l2 = l2.concat("\n"+h);
+									else
+										l2 = l2.concat(h);
+								}
+							}
+							String r = !l1.equals("") ? l1.concat("\n"+l2) : l2;
+							return r.trim();
+							});
+
+		UpdateModel u = new UpdateModel(i,n,true,e.getRevision(),desc,e.getAuthor(),
+				LocalDateTime.ofInstant(e.getDate().toInstant(), ZoneId.systemDefault()),e,childs,local);
 		map.put(i, u);
 	}
 }

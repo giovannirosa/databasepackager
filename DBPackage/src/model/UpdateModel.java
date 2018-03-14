@@ -1,5 +1,6 @@
 package model;
 
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -16,9 +17,10 @@ public class UpdateModel {
 	private LocalDateTime date;
 	private SVNDirEntry entry;
 	private List<SVNDirEntry> childs;
+	private Path local;
 
 	public UpdateModel(int number, String name, boolean selected, long revision, String tasks, String author,
-			LocalDateTime date, SVNDirEntry entry, List<SVNDirEntry> childs) {
+			LocalDateTime date, SVNDirEntry entry, List<SVNDirEntry> childs, Path local) {
 		super();
 		this.number = number;
 		this.name = name;
@@ -29,6 +31,7 @@ public class UpdateModel {
 		this.date = date;
 		this.entry = entry;
 		this.childs = childs;
+		this.setLocal(local);
 	}
 
 	public String getName() {
@@ -101,5 +104,13 @@ public class UpdateModel {
 
 	public void setDate(LocalDateTime date) {
 		this.date = date;
+	}
+
+	public Path getLocal() {
+		return local;
+	}
+
+	public void setLocal(Path local) {
+		this.local = local;
 	}
 }

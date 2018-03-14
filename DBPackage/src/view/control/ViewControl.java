@@ -2,7 +2,7 @@ package view.control;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
+import controller.DBPackage;
 import controller.PackageControl;
 import javafx.application.Platform;
 import javafx.beans.property.StringProperty;
@@ -28,6 +28,8 @@ public class ViewControl {
     @FXML private TextField textField;
     @FXML private Button searchBut;
     @FXML private Button genBut;
+    @FXML private Button expBut;
+    @FXML private Button collBut;
     @FXML private Button exitBut;
     @FXML private MenuItem aboutMenuItem;
 
@@ -37,11 +39,8 @@ public class ViewControl {
     AboutControl abControl = new AboutControl(stage);
     
     public ViewControl(Stage stage) {
-    	URL arquivoFXML = getClass().getResource(
-				"/view/DBPackage.fxml");
-		FXMLLoader fxmlLoader = new FXMLLoader(arquivoFXML);
+		FXMLLoader fxmlLoader = new FXMLLoader(DBPackage.class.getClassLoader().getResource("DBPackage.fxml"));
         fxmlLoader.setController(this);
-
         try {
             fxmlLoader.load();
         } catch (IOException exception) {
@@ -58,10 +57,11 @@ public class ViewControl {
         mainPane.prefWidthProperty().bind(scene.widthProperty());
         
         stage.setScene(scene);
-        stage.setTitle("Database Packager");
+        stage.setTitle("Hermesus");
         stage.setMinHeight(800);
         stage.setMinWidth(600);
-        stage.getIcons().add(new Image(getClass().getResource("/compressor.png").toExternalForm()));
+        stage.setMaximized(true);
+        stage.getIcons().add(new Image(getClass().getResource("/network.png").toExternalForm()));
         stage.show();
     }
     
@@ -79,16 +79,22 @@ public class ViewControl {
     	    		@Override
     	    		public void run() {
     	    			tControl.populateTable();
+    	    			expBut.setDisable(false);
+    	    			collBut.setDisable(false);
     	    			genBut.setDisable(false);
     	    		}
-    	    	});  
+    	    	});
     	    	return true;
     	    }
     	};
 
     	task.setOnRunning((e) -> lControl.show("Searching from svn..."));
     	task.setOnSucceeded((e) -> lControl.hide());
-    	task.setOnFailed((e) -> lControl.hide());
+    	task.setOnFailed((e) -> {
+    		lControl.hide();
+    		ViewControl.showMessage("Authentication Failed", "Authentication failed!");
+    		aControl.showAuthDialog(false);
+    	});
     	new Thread(task).start();
     }
 
@@ -113,8 +119,12 @@ public class ViewControl {
     	searchBut.setOnAction(e -> {
     		if (!PackageControl.validateURL(textField.getText()))
     			return;
-    		aControl.showAuthDialog();
+    		aControl.showAuthDialog(true);
     	});
+    	expBut.setOnAction(e -> tControl.expandAll());
+    	expBut.setDisable(true);
+    	collBut.setOnAction(e -> tControl.collapseAll());
+    	collBut.setDisable(true);
     	genBut.setOnAction(e -> {
     		FileChooser chooser = new FileChooser();
     		chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Compressed", ".zip"));

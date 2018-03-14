@@ -1,41 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.TableColumn?>
-<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TreeTableColumn?>
+<?import javafx.scene.control.TreeTableView?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.control.cell.PropertyValueFactory?>
-<?import view.util.CheckBoxTableCellFactory?>
-<?import model.TableModel?>
+<?import javafx.scene.control.cell.TreeItemPropertyValueFactory?>
 
-<TableView editable="true" fx:id="table" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/9.0.1">
+<TreeTableView stylesheets="Table.css" editable="true" fx:id="table" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/8.0.162">
   <columns>
-    <TableColumn text="">
-    </TableColumn>
-    <TableColumn text="Update">
-    	<cellValueFactory><PropertyValueFactory property="number" />
+    <TreeTableColumn text="">
+    </TreeTableColumn>
+    <TreeTableColumn text="Update">
+    	<cellValueFactory><TreeItemPropertyValueFactory property="number" />
         </cellValueFactory>
-    </TableColumn>
-      <TableColumn text="Content">
-         <columns>
-            <TableColumn text="Task">
-              <cellValueFactory><PropertyValueFactory property="tasks" />
-        	  </cellValueFactory>
-        	</TableColumn>
-            <TableColumn text="File">
-        	</TableColumn>
-         </columns>
-      </TableColumn>
-      <TableColumn text="Revision">
-        <cellValueFactory><PropertyValueFactory property="revision" />
+    </TreeTableColumn>
+      <TreeTableColumn text="Description">
+		<cellValueFactory><TreeItemPropertyValueFactory property="desc" />
         </cellValueFactory>
-      </TableColumn>
-      <TableColumn text="Author">
-        <cellValueFactory><PropertyValueFactory property="author" />
+      </TreeTableColumn>
+      <TreeTableColumn text="Revision">
+        <cellValueFactory><TreeItemPropertyValueFactory property="revision" />
         </cellValueFactory>
-      </TableColumn>
-      <TableColumn text="Date">
-        <cellValueFactory><PropertyValueFactory property="date" />
+      </TreeTableColumn>
+      <TreeTableColumn text="Author">
+        <cellValueFactory><TreeItemPropertyValueFactory property="author" />
         </cellValueFactory>
-      </TableColumn>
+      </TreeTableColumn>
+      <TreeTableColumn text="Date">
+        <cellValueFactory><TreeItemPropertyValueFactory property="date" />
+        </cellValueFactory>
+      </TreeTableColumn>
   </columns>
-</TableView>
+</TreeTableView>

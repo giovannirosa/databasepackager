@@ -2,6 +2,7 @@ package view.control;
 
 import java.io.IOException;
 
+import controller.DBPackage;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -23,7 +24,7 @@ public class AboutControl {
 		stage.setAlwaysOnTop(true);
 		stage.setResizable(false);
 		
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/About.fxml"));
+		FXMLLoader loader = new FXMLLoader(DBPackage.class.getClassLoader().getResource("About.fxml"));
 		loader.setController(this);
     	try {
     		stage.setScene(new Scene(loader.load()));

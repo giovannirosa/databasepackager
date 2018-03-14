@@ -16,19 +16,22 @@ public class TableModel {
 	
 	private final BooleanProperty selected = new SimpleBooleanProperty();
 	private final IntegerProperty  number   = new SimpleIntegerProperty();
-	private final StringProperty  tasks    = new SimpleStringProperty();
+	private final StringProperty  desc    = new SimpleStringProperty();
 	private final LongProperty  revision = new SimpleLongProperty();
 	private final StringProperty  author   = new SimpleStringProperty();
 	private final ObjectProperty<LocalDateTime>  date = new SimpleObjectProperty<>();
 	
-	public TableModel(boolean s, int n, String t, long r, String a, LocalDateTime d) {
+	public TableModel(boolean s, int n, String de, long r, String a, LocalDateTime d) {
 		selected.set(s);
 		number.set(n);
-		tasks.set(t);
+		desc.set(de);
 		revision.set(r);
 		author.set(a);
-//		date.set(d.format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)));
 		date.set(d);
+	}
+	
+	public TableModel(String d) {
+		desc.set(d);
 	}
 	
 	public BooleanProperty getSelected() {
@@ -47,12 +50,12 @@ public class TableModel {
 		number.set(n);
 	}
 	
-	public String getTasks() {
-		return tasks.get();
+	public String getDesc() {
+		return desc.get();
 	}
 	
-	public void setTasks(String t) {
-		tasks.set(t);
+	public void setDesc(String t) {
+		desc.set(t);
 	}
 	
 	public long getRevision() {

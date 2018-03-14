@@ -3,10 +3,12 @@ package view.control;
 import java.io.IOException;
 import java.util.Optional;
 
+import controller.DBPackage;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.PasswordField;
@@ -28,20 +30,21 @@ public class AuthControl {
     @FXML
     PasswordField passTxt;
     @FXML
+    CheckBox remBox;
+    @FXML
     ButtonType authBut;
     @FXML
     ButtonType cancelBut;
     
     ViewControl vControl;
     
+    Dialog<ButtonType> dialog;
+    
     public AuthControl(ViewControl v) {
     	vControl = v;
-    }
-    
-    public void showAuthDialog() {
-    	Dialog<ButtonType> dialog = new Dialog<>();
+    	dialog = new Dialog<>();
     	dialog.setTitle("Authentication");
-    	FXMLLoader dialogLoader = new FXMLLoader(getClass().getResource("/view/Auth.fxml"));
+    	FXMLLoader dialogLoader = new FXMLLoader(DBPackage.class.getClassLoader().getResource("Auth.fxml"));
     	dialogLoader.setController(this);
     	try {
 			dialog.setDialogPane(dialogLoader.load());
@@ -64,7 +67,14 @@ public class AuthControl {
     	});
     	Stage stage = (Stage) dialog.getDialogPane().getScene().getWindow();
     	stage.getIcons().add(
-    			new Image(this.getClass().getResource("/compressor.png").toString()));
+    			new Image(this.getClass().getResource("/auth.png").toString()));
+    }
+    
+    public void showAuthDialog(boolean clear) {
+    	if (clear) {
+    		userTxt.clear();
+    		passTxt.clear();
+    	}
     	Optional<ButtonType> op = dialog.showAndWait();
     	op.filter(AuthControl.AUTH::equals)
     		.ifPresent(button -> vControl.search());
