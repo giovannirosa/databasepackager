@@ -26,10 +26,10 @@ public class Factory {
 	public static void deleteFolder(Path p) {
 		try {
 			Files.walk(p, FileVisitOption.FOLLOW_LINKS)
-			.sorted(Comparator.reverseOrder())
-			.map(Path::toFile)
-			.peek(System.out::println)
-			.forEach(File::delete);
+				 .sorted(Comparator.reverseOrder())
+				 .map(Path::toFile)
+				 .peek(System.out::println)
+				 .forEach(File::delete);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

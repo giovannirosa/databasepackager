@@ -2,6 +2,7 @@ package controller;
 
 import java.awt.Desktop;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,6 +13,7 @@ import java.time.ZoneId;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -21,6 +23,12 @@ import model.UpdateModel;
 import view.control.ViewControl;
 import view.util.Factory;
 
+import org.apache.poi.hwpf.HWPFDocument;
+import org.apache.poi.hwpf.usermodel.Range;
+import org.apache.poi.hwpf.usermodel.Table;
+import org.apache.poi.hwpf.usermodel.TableCell;
+import org.apache.poi.hwpf.usermodel.TableIterator;
+import org.apache.poi.hwpf.usermodel.TableRow;
 import org.tmatesoft.svn.core.SVNAuthenticationException;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNDirEntry;
@@ -43,9 +51,10 @@ import javafx.application.Platform;
 public class PackageControl {
 	static private Map<Integer,UpdateModel> map = new TreeMap<>();
 	
-	static SVNRepository repository;
-	static SVNClientManager manager;
-	static File tempDir;
+	private static SVNRepository repository;
+	private static SVNClientManager manager;
+	private static File tempDir;
+	private static SettingsJson sJson = SettingsJson.getInstance();
 	
 	public void checkOut(SVNDirEntry e) {
 		final SvnCheckout checkout = manager.getUpdateClient().getOperationsFactory().createCheckout();
@@ -163,10 +172,26 @@ public class PackageControl {
 		int i = Integer.valueOf(n.substring(n.length()-3, n.length()));
 		return i > 99;
 	}
+	
+	private static boolean testExternals(SVNDirEntry e) {
+		if (!(e.getKind()==SVNNodeKind.FILE))
+			return false;
+		
+		String n = e.getName();
+		String ext[] = sJson.getExtFiles().split(",");
+		for (String x : ext) {
+			if (n.equals(x))
+				return true;
+		}
+
+		return false;
+	}
 
 	public static void listEntries() throws SVNException {
-		entriesStream("").filter(f -> testEntries(f))
-						.forEach(f -> collectModels(f));
+		Stream<SVNDirEntry> eStream = entriesStream("");
+		eStream.filter(f -> testEntries(f))
+				.forEach(f -> collectModels(f));
+		eStream.close();
 		map.forEach((k,v) -> System.out.println(v.getName()));
 	}
 
@@ -196,23 +221,41 @@ public class PackageControl {
 					if (Files.notExists(d)) {
 						Files.createDirectory(d);
 					} else {
-						Factory.deleteFolder(d);
-						Files.createDirectory(d);			
+						Files.list(d).forEach(f -> {
+							try {
+								Files.delete(f);
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						});
 					}
+					doExport(v.getEntry(), d.toFile());
+					Files.list(d).filter(p -> p.getFileName().toString().endsWith("BODY.sql")).forEach(p -> {
+						try {
+							Files.delete(p);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					});
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
-				doExport(v.getEntry(), d.toFile());
 			}
 		});
+		Stream<SVNDirEntry> eStream = entriesStream("");
+		eStream.filter(f -> testExternals(f))
+				.forEach(f -> doExport(f, tempDir.toPath().resolve(f.getName()).toFile()));
+		eStream.close();
 		try (FileOutputStream fos = new FileOutputStream(target);
 				ZipOutputStream zipOut = new ZipOutputStream(fos);) {
-		        Factory.zipFile(tempDir, tempDir.getName(), zipOut);
+			String filename = target.toPath().getFileName().toString();
+			filename = filename.substring(0, filename.indexOf("."));
+			Factory.zipFile(tempDir, filename, zipOut);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		Platform.runLater(new Runnable() {
-    		@Override
+			@Override
     		public void run() {
     			ViewControl.showMessage("Export Done", "Package successfully exported!");
     		}
@@ -228,7 +271,7 @@ public class PackageControl {
 	private static Stream<String> linesStream(Path local, String file) {
 		Stream<String> s = null;
 		try {
-			Path p = local.resolve(Paths.get(file));
+			Path p = local.resolve(file);
 			if (p.toFile().exists())
 				s = Files.lines(p);
 		} catch (IOException e) {
@@ -237,32 +280,75 @@ public class PackageControl {
 		return s;
 	}
 	
+	private static String extractDoc(Path local, String file) {
+		String s = "";
+		try (FileInputStream fis = new FileInputStream(local.resolve(file).toFile());
+				HWPFDocument doc = new HWPFDocument(fis);) {
+			
+			Range range = doc.getRange();
+		    TableIterator itr = new TableIterator(range);
+		    while(itr.hasNext()){
+		        Table table = itr.next();
+		        TableRow row = table.getRow(1);
+		        TableCell cell = row.getCell(1);
+		        String qc = cell.getParagraph(0).text();
+		        if (qc.length() > 5)
+		        	qc = qc.substring(0, 5) +"/"+ qc.substring(5);
+		        cell = row.getCell(5);
+		        s = "QC"+qc+" - "+cell.getParagraph(0).text();
+		    }
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return s;
+	}
+	
+	private static String combineLines(String l1, String l2) {
+		if (l2.length() > 180) {
+			String[] a = l2.split("(?<=\\G.{180})");
+			l2 = "";
+			for (String h : a) {
+				if (!l2.isEmpty())
+					l2 = l2.concat("\n"+h);
+				else
+					l2 = l2.concat(h);
+			}
+		}
+		String r = !l1.equals("") ? l1.concat("\n"+l2) : l2;
+		return r.trim();
+	}
+	
 	private static void collectModels(SVNDirEntry e) {
 		String n = e.getName();
 		int i = Integer.valueOf(n.substring(n.length()-3, n.length()));
 		
-		List<SVNDirEntry> childs = entriesStream(e.getName()).collect(Collectors.toList());
-		childs.parallelStream().filter(f -> f.getName().equals("RELEASE_NOTES.txt")).findFirst().ifPresent(g -> exportOpenFromSvn(g,false));
+		Stream<SVNDirEntry> eStream = entriesStream(e.getName());
+		List<SVNDirEntry> childs = eStream.collect(Collectors.toList());
+		eStream.close();
+		String files[] = sJson.getDescFiles().split(",");
 		
 		Path local = tempDir.toPath().resolve(Paths.get(e.getName()));
-		Stream<String> lines = linesStream(local, "RELEASE_NOTES.txt");
 		String desc = "";
-		if (lines!=null)
-			desc = lines.filter(l -> testLine(l,e.getName()))
-						.reduce("", (l1,l2) -> {
-							if (l2.length() > 180) {
-								String[] a = l2.split("(?<=\\G.{180})");
-								l2 = "";
-								for (String h : a) {
-									if (!l2.isEmpty())
-										l2 = l2.concat("\n"+h);
-									else
-										l2 = l2.concat(h);
-								}
-							}
-							String r = !l1.equals("") ? l1.concat("\n"+l2) : l2;
-							return r.trim();
-							});
+		
+		for (String f : files) {
+			Optional<SVNDirEntry> opt = childs.parallelStream().filter(a -> a.getName().equals(f)).findFirst();
+			opt.ifPresent(g -> exportOpenFromSvn(g,false));
+			if (!opt.isPresent())
+				continue;
+
+			String ext = f.substring(f.indexOf("."));
+			if (ext.equalsIgnoreCase(".txt")) {
+				Stream<String> lines = linesStream(local, f);
+				if (lines!=null)
+					desc = lines.filter(l -> testLine(l,e.getName()))
+								.reduce("", (l1,l2) -> combineLines(l1,l2));
+				lines.close();
+				break;
+			} else if (ext.equalsIgnoreCase(".doc")) {
+				desc = extractDoc(local, "ChangeLog.doc");
+				break;
+			}
+		}
 
 		UpdateModel u = new UpdateModel(i,n,true,e.getRevision(),desc,e.getAuthor(),
 				LocalDateTime.ofInstant(e.getDate().toInstant(), ZoneId.systemDefault()),e,childs,local);

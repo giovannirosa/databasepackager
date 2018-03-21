@@ -40,8 +40,13 @@
   	</dependency>
   	<dependency>
   		<groupId>org.apache.poi</groupId>
-  		<artifactId>poi-ooxml</artifactId>
+  		<artifactId>poi-scratchpad</artifactId>
   		<version>3.17</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>org.json</groupId>
+  		<artifactId>json</artifactId>
+  		<version>20180130</version>
   	</dependency>
   </dependencies>
 </project>

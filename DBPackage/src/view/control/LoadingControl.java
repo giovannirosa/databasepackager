@@ -3,6 +3,7 @@ package view.control;
 import java.io.IOException;
 
 import controller.DBPackage;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -42,6 +43,13 @@ public class LoadingControl {
 	
 	public void hide() {
 		stage.hide();
+	}
+	
+	public void setTask(Task<?> t) {
+		pBar.progressProperty().unbind();
+		pBar.progressProperty().bind(t.progressProperty());
+		pInd.progressProperty().unbind();
+		pInd.progressProperty().bind(t.progressProperty());
 	}
 	
 	public void setProgress(double p) {

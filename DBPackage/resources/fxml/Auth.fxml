@@ -28,7 +28,7 @@
                 <TextField fx:id="userTxt" GridPane.columnIndex="1" />
                 <Label text="Password:" GridPane.rowIndex="1" />
                 <PasswordField fx:id="passTxt" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-            <CheckBox mnemonicParsing="false" text="Remember my credentials" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+            <CheckBox fx:id="remBox" mnemonicParsing="false" text="Remember my credentials" GridPane.columnIndex="1" GridPane.rowIndex="2" />
             </children>
         </GridPane>
     </content>

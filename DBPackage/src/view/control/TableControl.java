@@ -27,7 +27,7 @@ import model.TableModel;
 public class TableControl {
 	
 	@FXML private TreeTableView<TableModel> table;
-	final TreeItem<TableModel> root = new TreeItem<>();
+	private final TreeItem<TableModel> root = new TreeItem<>();
 	
 	private static final PseudoClass LEAF = PseudoClass.getPseudoClass("leaf");
 
@@ -119,7 +119,6 @@ public class TableControl {
 		configCol(cols.get(4),110,110,false); // aut
 		configCol(cols.get(5),110,110,false); // date
 		
-//		descCol = (TreeTableColumn<TableModel, String>) cols.remove(2);
 		table.setRowFactory(view -> new TreeTableRow<TableModel>() {
 
 		    {
@@ -129,7 +128,7 @@ public class TableControl {
 		        treeItemProperty().addListener((observable, oldItem, newItem) -> {
 		            if (oldItem != null) {
 		                oldItem.leafProperty().removeListener(listener);
-		                setPrefHeight(22);
+		                setPrefHeight(26);
 		            }
 		            if (newItem != null) {
 		                newItem.leafProperty().addListener(listener);
@@ -137,7 +136,7 @@ public class TableControl {
 		                String desc = newItem.getValue().getDesc();
 		                if (desc!=null && !desc.equals("")) {
 		                	int x = desc.split("\n").length;
-		                	setPrefHeight(22*x);
+		                	setPrefHeight(26*x);
 		                }
 		            } else {
 		                listener.changed(null, null, Boolean.FALSE);
@@ -181,36 +180,8 @@ public class TableControl {
 					item.getValue().setDesc("");
 				if (oldItem && !newItem)
 					item.getValue().setDesc(d);
-//				if (table.getColumns().contains(descCol) && root.getChildren().stream().noneMatch(model -> model.isExpanded()))
-//					table.getColumns().remove(descCol);
-//				else if (!table.getColumns().contains(descCol) && root.getChildren().stream().anyMatch(model -> model.isExpanded()))
-//					table.getColumns().add(2, descCol);
 			});
 			root.getChildren().add(item);
     	});
 	}
-	
-//	 private void createButtons(List<SVNDirEntry> childs, UpdatePane uPane) {
-//	    	childs.forEach(c -> {
-//	    		Button but = null;
-//	    		switch (c.getName()) {
-//				case "RELEASE_NOTES.txt":
-//					but = new Button();
-//					but.setText("Release Notes");
-//					break;
-//				case "ChangeLog.doc":
-//					but = new Button();
-//					but.setText("Change Log");
-//					break;
-//				default:
-//					break;
-//	    		}
-//	    		if (but!=null) {
-//	    			but.setOnAction(e -> {
-//	    				PackageControl.exportOpenFromSvn(c);
-//	    			});
-//	    			uPane.addButton(but);
-//	    		}
-//	    	});
-//	    }
 }

@@ -20,7 +20,10 @@
   <children>
     <MenuBar VBox.vgrow="NEVER">
       <menus>
-        <Menu mnemonicParsing="false" text="Help">
+        <Menu mnemonicParsing="false" text="Options">
+          <items>
+            <MenuItem fx:id="setMenuItem" mnemonicParsing="false" text="Settings" />
+          </items>
           <items>
             <MenuItem fx:id="aboutMenuItem" mnemonicParsing="false" text="About DBPackage" />
           </items>

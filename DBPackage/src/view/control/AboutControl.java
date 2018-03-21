@@ -15,7 +15,7 @@ import javafx.stage.Window;
 public class AboutControl {
 	Stage stage = new Stage();
 	
-	@FXML Button closeBut;
+	@FXML private Button closeBut;
 
 	public AboutControl(Window owner) {
 		stage.initModality(Modality.APPLICATION_MODAL);

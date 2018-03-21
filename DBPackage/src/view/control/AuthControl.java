@@ -66,15 +66,12 @@ public class AuthControl {
     	    }
     	});
     	Stage stage = (Stage) dialog.getDialogPane().getScene().getWindow();
+    	stage.setAlwaysOnTop(false);
     	stage.getIcons().add(
     			new Image(this.getClass().getResource("/auth.png").toString()));
     }
     
-    public void showAuthDialog(boolean clear) {
-    	if (clear) {
-    		userTxt.clear();
-    		passTxt.clear();
-    	}
+    public void showAuthDialog() {
     	Optional<ButtonType> op = dialog.showAndWait();
     	op.filter(AuthControl.AUTH::equals)
     		.ifPresent(button -> vControl.search());
@@ -86,22 +83,25 @@ public class AuthControl {
 	public void setLoginPane(DialogPane loginPane) {
 		this.loginPane = loginPane;
 	}
-	public TextField getUserTxt() {
-		return userTxt;
+	public String getUser() {
+		return userTxt.getText();
 	}
-	public void setUserTxt(TextField userTxt) {
-		this.userTxt = userTxt;
+	public void setUser(String userTxt) {
+		this.userTxt.setText(userTxt);
 	}
-	public PasswordField getPassTxt() {
-		return passTxt;
+	public String getPass() {
+		return passTxt.getText();
 	}
-	public void setPassTxt(PasswordField passTxt) {
-		this.passTxt = passTxt;
+	public void setPass(String passTxt) {
+		this.passTxt.setText(passTxt);
 	}
 	public ButtonType getLoginButton() {
 		return authBut;
 	}
 	public void setLoginButton(ButtonType loginButton) {
 		this.authBut = loginButton;
+	}
+	public boolean isRemSelected() {
+		return remBox.isSelected();
 	}
 }
