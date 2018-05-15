@@ -30,6 +30,8 @@ public class TableControl {
 	private final TreeItem<TableModel> root = new TreeItem<>();
 	
 	private static final PseudoClass LEAF = PseudoClass.getPseudoClass("leaf");
+	
+	private DescControl dControl = new DescControl(null);
 
 	public TreeTableView<TableModel> getTable() {
 		return table;
@@ -118,33 +120,42 @@ public class TableControl {
 		configCol(cols.get(3),60,60,false); // rev
 		configCol(cols.get(4),110,110,false); // aut
 		configCol(cols.get(5),110,110,false); // date
-		
-		table.setRowFactory(view -> new TreeTableRow<TableModel>() {
 
-		    {
-		        ChangeListener<Boolean> listener = (observable, oldValue, newValue) -> {
-		            pseudoClassStateChanged(LEAF, newValue);
-		        };
-		        treeItemProperty().addListener((observable, oldItem, newItem) -> {
-		            if (oldItem != null) {
-		                oldItem.leafProperty().removeListener(listener);
-		                setPrefHeight(26);
-		            }
-		            if (newItem != null) {
-		                newItem.leafProperty().addListener(listener);
-		                listener.changed(null, null, newItem.isLeaf());
-		                String desc = newItem.getValue().getDesc();
-		                if (desc!=null && !desc.equals("")) {
-		                	int x = desc.split("\n").length;
-		                	setPrefHeight(26*x);
-		                }
-		            } else {
-		                listener.changed(null, null, Boolean.FALSE);
-		            }
-		        });
-		    }
-
-		});
+		table.setRowFactory(view -> {
+			TreeTableRow<TableModel> row = new TreeTableRow<TableModel>() {
+				{
+					ChangeListener<Boolean> listener = (observable, oldValue, newValue) -> {
+						pseudoClassStateChanged(LEAF, newValue);
+					};
+					treeItemProperty().addListener((observable, oldItem, newItem) -> {
+						if (oldItem != null) {
+							oldItem.leafProperty().removeListener(listener);
+							setPrefHeight(26);
+						}
+						if (newItem != null) {
+							newItem.leafProperty().addListener(listener);
+							listener.changed(null, null, newItem.isLeaf());
+							String desc = newItem.getValue().getDesc();
+							if (desc!=null && !desc.equals("")) {
+								int x = desc.split("\n").length;
+								setPrefHeight(26*x);
+							}
+						} else {
+							listener.changed(null, null, Boolean.FALSE);
+						}
+					});
+				}
+			};
+			row.setOnMouseClicked(e -> {
+				if (e.getClickCount() == 2 && row.getItem().getAuthor()==null) {
+					TreeItem <TableModel> parent = row.getTreeItem().getParent();
+					dControl.setUpdate(parent.getValue().getNumber());
+					dControl.setDesc(row.getItem().getDesc());
+					dControl.show();
+				}
+			});
+			return row;
+	});
 		
 		table.setColumnResizePolicy(TreeTableView.UNCONSTRAINED_RESIZE_POLICY);
 		table.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
@@ -172,7 +183,7 @@ public class TableControl {
 		PackageControl.getMap().forEach((k,v) -> {
 			String[] msg = v.getTasks().split("\n");
 			String d = msg.length>1 ? msg[0]+" [...]":msg[0];
-			TreeItem<TableModel> item = new TreeItem<>(new TableModel(true,v.getNumber(),d,v.getRevision(),v.getAuthor(),v.getDate()));
+			TreeItem<TableModel> item = new TreeItem<>(new TableModel(true,v.getNumber(),d,v.getRevision(),v.getAuthor(),v.getDate(),v.getDescFile()));
 			TreeItem<TableModel> desc = new TreeItem<>(new TableModel(v.getTasks()));
 			item.getChildren().add(desc);
 			item.expandedProperty().addListener((observable, oldItem, newItem) -> {

@@ -4,6 +4,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.GeneralSecurityException;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
 import org.json.JSONObject;
 
 public class SettingsJson {
@@ -12,10 +17,15 @@ public class SettingsJson {
 	private String defUrl = "https://jenova.smgtec.com/svn/repos2/Database/NGAI-RELEASES/009_NGAI2017.1/Baseline/FACTSINT";
 	private String descFiles = "RELEASE_NOTES.txt,ChangeLog.doc";
 	private Path defSave = Paths.get(System.getProperty("user.home"));
-	private Path criptoPath = Paths.get(System.getProperty("user.home")).resolve("wrap.exe");
-	private String extFiles = "";
+	private Path criptoPath = Paths.get(System.getProperty("user.home"));
+	private String extFiles = "checkversion.sql,run_as_SYS.sql,runDBupdate.sh,texttemplate.dpdmp,texttemplate_README.txt,README.txt";
 	private String user = "";
 	private String pass = "";
+	
+	String key = "packegerpackeger";
+    SecretKey secretKey;
+    Cipher desCipher;
+    private static final String ALGORITHM = "AES";
 	
 	private static SettingsJson instance = null;
 	
@@ -27,6 +37,13 @@ public class SettingsJson {
 	}
 	
 	private SettingsJson() {
+		try {
+			secretKey = new SecretKeySpec(key.getBytes(), ALGORITHM);
+			desCipher = Cipher.getInstance(ALGORITHM);
+		} catch (GeneralSecurityException e) {
+			e.printStackTrace();
+		}
+		
 		setPath = Paths.get(System.getProperty("user.home")).resolve(".hermesus");
 		if (Files.notExists(setPath)) {
 			try {
@@ -48,15 +65,18 @@ public class SettingsJson {
 			loadJson();
 		}
 	}
-	
+
 	public void loadJson() {
-		byte content[] = null;;
+		byte[] textDecrypted = null;
 		try {
-			content = Files.readAllBytes(setPath);
-		} catch (IOException e) {
+			byte[] content = Files.readAllBytes(setPath);
+			
+			desCipher.init(Cipher.DECRYPT_MODE, secretKey);
+            textDecrypted = desCipher.doFinal(content);
+		} catch (IOException | GeneralSecurityException e) {
 			e.printStackTrace();
 		}
-		JSONObject json = new JSONObject(new String(content));
+		JSONObject json = new JSONObject(new String(textDecrypted));
 		defUrl = json.getString("defUrl");
 		descFiles = json.getString("descFiles");
 		defSave = Paths.get(json.getString("defSave"));
@@ -78,8 +98,13 @@ public class SettingsJson {
 		json.put("pass", pass);
 		
 		try {
-			Files.write(setPath, json.toString().getBytes());
-		} catch (IOException e) {
+	        byte[] text = json.toString().getBytes("UTF8");
+	        
+	        desCipher.init(Cipher.ENCRYPT_MODE, secretKey);
+            byte[] textEncrypted = desCipher.doFinal(text);
+	        
+			Files.write(setPath, textEncrypted);
+		} catch (IOException | GeneralSecurityException e) {
 			e.printStackTrace();
 		}
 	}

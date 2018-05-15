@@ -12,8 +12,9 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.layout.GridPane;
 import javafx.stage.DirectoryChooser;
-import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -22,24 +23,29 @@ import javafx.stage.Window;
 public class SettingsControl {
 	Stage stage = new Stage();
 	
+	@FXML private GridPane gridPane;
+	
 	@FXML private TextField urlTxt;
-	@FXML private TextField descTxt;
 	@FXML private TextField saveTxt;
 	@FXML private TextField criptoTxt;
-	@FXML private TextField extTxt;
 	
 	@FXML private Button searchSaveBut;
 	@FXML private Button searchCriptoBut;
 	@FXML private Button saveBut;
 	@FXML private Button cancelBut;
 	
+	SetTableControl dTableControl = new SetTableControl();
+	SetTableControl eTableControl = new SetTableControl();
+	
 	SettingsJson sJson = SettingsJson.getInstance();
 	
 	public SettingsControl(Window owner) {
 		stage.initModality(Modality.APPLICATION_MODAL);
 		stage.initOwner(owner);
-		stage.initStyle(StageStyle.UTILITY);
+		stage.initStyle(StageStyle.DECORATED);
 		stage.setResizable(false);
+		stage.setTitle("Settings");
+		stage.getIcons().add(new Image(getClass().getResource("/settings.png").toExternalForm()));
 		
 		FXMLLoader loader = new FXMLLoader(DBPackage.class.getClassLoader().getResource("Settings.fxml"));
 		loader.setController(this);
@@ -48,6 +54,9 @@ public class SettingsControl {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+    	
+    	gridPane.add(dTableControl.getPane(), 1, 3);
+    	gridPane.add(eTableControl.getPane(), 1, 4);
     	
     	resumeFields();
     	cancelBut.setOnAction(e -> {
@@ -59,7 +68,7 @@ public class SettingsControl {
     			return;
     		if (!validateDescFiles())
     			return;
-    		sJson.setFields(urlTxt.getText(), descTxt.getText(), saveTxt.getText(), criptoTxt.getText(), extTxt.getText());
+    		sJson.setFields(urlTxt.getText(), dTableControl.getContent(), saveTxt.getText(), criptoTxt.getText(), eTableControl.getContent());
     		sJson.storeJson();
     		stage.hide();
     	});
@@ -72,10 +81,9 @@ public class SettingsControl {
     		}
     	});
     	searchCriptoBut.setOnAction(e -> {
-    		FileChooser chooser = new FileChooser();
-    		chooser.setInitialDirectory(Paths.get(criptoTxt.getText().substring(0, criptoTxt.getText().lastIndexOf("\\"))).toFile()); 
-    		chooser.setInitialFileName(criptoTxt.getText().substring(criptoTxt.getText().lastIndexOf("\\")+1));
-    		File target = chooser.showOpenDialog(stage);
+    		DirectoryChooser chooser = new DirectoryChooser();
+    		chooser.setInitialDirectory(Paths.get(criptoTxt.getText()).toFile()); 
+    		File target = chooser.showDialog(stage);
     		if (target!=null) {
     			criptoTxt.setText(target.getAbsolutePath());
     		}
@@ -83,10 +91,13 @@ public class SettingsControl {
 	}
 	
 	private boolean validateDescFiles() {
-		String desc[] = descTxt.getText().split(",");
+		String desc[] = dTableControl.getContent().split(",");
 		for (String d : desc) {
-			String ext = d.substring(d.indexOf("."));
-			if (!ext.equalsIgnoreCase(".txt") && !ext.equalsIgnoreCase(".doc")) {
+			int i = d.indexOf(".");
+			String ext = "";
+			if (i > 0)
+				ext = d.substring(d.indexOf("."));
+			if (ext.isEmpty() && !ext.equalsIgnoreCase(".txt") && !ext.equalsIgnoreCase(".doc")) {
 				ViewControl.showMessage("Invalid Description Files Extension", "The extension '"+ext+"' for description file '"+d+"' is not supported! "
 						+ "Please use '.txt' or '.doc'!");
 				return false;
@@ -95,12 +106,12 @@ public class SettingsControl {
 		return true;
 	}
 	
-	private void resumeFields() {
+	public void resumeFields() {
 		urlTxt.setText(sJson.getDefUrl());
-		descTxt.setText(sJson.getDescFiles());
+		dTableControl.setContent(sJson.getDescFiles());
 		saveTxt.setText(sJson.getDefSave().toString());
 		criptoTxt.setText(sJson.getCriptoPath().toString());
-		extTxt.setText(sJson.getExtFiles());
+		eTableControl.setContent(sJson.getExtFiles());
 	}
 	
 	public void show() {

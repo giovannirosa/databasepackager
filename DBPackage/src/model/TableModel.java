@@ -1,5 +1,6 @@
 package model;
 
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
@@ -20,14 +21,16 @@ public class TableModel {
 	private final LongProperty  revision = new SimpleLongProperty();
 	private final StringProperty  author   = new SimpleStringProperty();
 	private final ObjectProperty<LocalDateTime>  date = new SimpleObjectProperty<>();
+	private Path  file;
 	
-	public TableModel(boolean s, int n, String de, long r, String a, LocalDateTime d) {
+	public TableModel(boolean s, int n, String de, long r, String a, LocalDateTime d, Path df) {
 		selected.set(s);
 		number.set(n);
 		desc.set(de);
 		revision.set(r);
 		author.set(a);
 		date.set(d);
+		setFile(df);
 	}
 	
 	public TableModel(String d) {
@@ -80,5 +83,13 @@ public class TableModel {
 	
 	public void setDate(LocalDateTime t) {
 		date.set(t);
+	}
+
+	public Path getFile() {
+		return file;
+	}
+	
+	public void setFile(Path f) {
+		file = f;
 	}
 }

@@ -24,7 +24,6 @@ public class LoadingControl {
 		stage.initModality(Modality.APPLICATION_MODAL);
 		stage.initOwner(owner);
 		stage.initStyle(StageStyle.UTILITY);
-		stage.setAlwaysOnTop(true);
 		
 		FXMLLoader loader = new FXMLLoader(DBPackage.class.getClassLoader().getResource("Loading.fxml"));
 		loader.setController(this);

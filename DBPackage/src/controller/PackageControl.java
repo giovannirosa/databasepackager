@@ -1,10 +1,13 @@
 package controller;
 
 import java.awt.Desktop;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipOutputStream;
@@ -188,10 +193,10 @@ public class PackageControl {
 	}
 
 	public static void listEntries() throws SVNException {
-		Stream<SVNDirEntry> eStream = entriesStream("");
-		eStream.filter(f -> testEntries(f))
-				.forEach(f -> collectModels(f));
-		eStream.close();
+		try (Stream<SVNDirEntry> eStream = entriesStream("")) {
+			eStream.filter(f -> testEntries(f))
+				   .forEach(f -> collectModels(f));
+		}
 		map.forEach((k,v) -> System.out.println(v.getName()));
 	}
 
@@ -211,6 +216,8 @@ public class PackageControl {
 	}
 	
 	public static void createZip(File target) {
+		boolean isWindows = System.getProperty("os.name")
+				  .toLowerCase().startsWith("windows");
 		map.forEach((k,v) -> {
 			Path d = tempDir.toPath().resolve(v.getEntry().getName());
 			if (!v.isSelected()) {
@@ -229,8 +236,9 @@ public class PackageControl {
 							}
 						});
 					}
-					doExport(v.getEntry(), d.toFile());
+					doExport(v.getEntry(), d.toFile());//TODO finalizar wrapper
 					Files.list(d).filter(p -> p.getFileName().toString().endsWith("BODY.sql")).forEach(p -> {
+						runWrap(p.toAbsolutePath().toString(),isWindows);
 						try {
 							Files.delete(p);
 						} catch (IOException e) {
@@ -242,10 +250,10 @@ public class PackageControl {
 				}
 			}
 		});
-		Stream<SVNDirEntry> eStream = entriesStream("");
-		eStream.filter(f -> testExternals(f))
-				.forEach(f -> doExport(f, tempDir.toPath().resolve(f.getName()).toFile()));
-		eStream.close();
+		try (Stream<SVNDirEntry> eStream = entriesStream("")) {
+			eStream.filter(f -> testExternals(f))
+				   .forEach(f -> doExport(f, tempDir.toPath().resolve(f.getName()).toFile()));
+		}
 		try (FileOutputStream fos = new FileOutputStream(target);
 				ZipOutputStream zipOut = new ZipOutputStream(fos);) {
 			String filename = target.toPath().getFileName().toString();
@@ -322,12 +330,14 @@ public class PackageControl {
 		String n = e.getName();
 		int i = Integer.valueOf(n.substring(n.length()-3, n.length()));
 		
-		Stream<SVNDirEntry> eStream = entriesStream(e.getName());
-		List<SVNDirEntry> childs = eStream.collect(Collectors.toList());
-		eStream.close();
+		List<SVNDirEntry> childs;
+		try (Stream<SVNDirEntry> eStream = entriesStream(e.getName())) {
+			childs = eStream.collect(Collectors.toList());
+		}
 		String files[] = sJson.getDescFiles().split(",");
 		
 		Path local = tempDir.toPath().resolve(Paths.get(e.getName()));
+		Path descFile = null;
 		String desc = "";
 		
 		for (String f : files) {
@@ -338,20 +348,63 @@ public class PackageControl {
 
 			String ext = f.substring(f.indexOf("."));
 			if (ext.equalsIgnoreCase(".txt")) {
-				Stream<String> lines = linesStream(local, f);
-				if (lines!=null)
-					desc = lines.filter(l -> testLine(l,e.getName()))
-								.reduce("", (l1,l2) -> combineLines(l1,l2));
-				lines.close();
+				try (Stream<String> lines = linesStream(local, f)) {
+					if (lines!=null)
+						desc = lines.filter(l -> testLine(l,e.getName()))
+									.reduce("", (l1,l2) -> combineLines(l1,l2));
+				}
+				descFile = local.resolve(f);
 				break;
 			} else if (ext.equalsIgnoreCase(".doc")) {
 				desc = extractDoc(local, "ChangeLog.doc");
+				descFile = local.resolve(f);
 				break;
 			}
 		}
 
 		UpdateModel u = new UpdateModel(i,n,true,e.getRevision(),desc,e.getAuthor(),
-				LocalDateTime.ofInstant(e.getDate().toInstant(), ZoneId.systemDefault()),e,childs,local);
+				LocalDateTime.ofInstant(e.getDate().toInstant(), ZoneId.systemDefault()),e,childs,local,descFile);
 		map.put(i, u);
+	}
+	
+	private static int runWrap(String iname, boolean isWindows) {
+		ProcessBuilder builder = new ProcessBuilder();
+		String oname = iname.replace(".sql", ".plb");
+		if (isWindows) {
+		    builder.command(sJson.getCriptoPath().resolve("wrap.exe").toString(), "iname='"+iname+"' oname='"+oname+"'");
+		} else {
+		    builder.command(sJson.getCriptoPath().resolve("wrap").toString(), "iname='"+iname+"' oname='"+oname+"'");
+		}
+		int exitCode = -1;
+		StringBuilder msg = new StringBuilder();;
+		Consumer<String> consumer = (s) -> msg.append(s);
+		try {
+			Process process = builder.start();
+			StreamGobbler streamGobbler = 
+					  new StreamGobbler(process.getInputStream(), consumer);
+					Executors.newSingleThreadExecutor().submit(streamGobbler);
+					exitCode = process.waitFor();
+		} catch (IOException | InterruptedException e) {
+			e.printStackTrace();
+		}
+		if (exitCode != 0)
+			throw new IllegalStateException(msg.toString());
+		return exitCode;
+	}
+	
+	private static class StreamGobbler implements Runnable {
+	    private InputStream inputStream;
+	    private Consumer<String> consumer;
+	 
+	    public StreamGobbler(InputStream inputStream, Consumer<String> consumer) {
+	        this.inputStream = inputStream;
+	        this.consumer = consumer;
+	    }
+	 
+	    @Override
+	    public void run() {
+	        new BufferedReader(new InputStreamReader(inputStream)).lines()
+	          .forEach(consumer);
+	    }
 	}
 }

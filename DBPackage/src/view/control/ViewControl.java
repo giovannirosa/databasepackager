@@ -1,7 +1,9 @@
 package view.control;
 
+import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.apache.poi.UnsupportedFileFormatException;
 import org.tmatesoft.svn.core.SVNAuthenticationException;
@@ -33,6 +35,7 @@ public class ViewControl {
     @FXML private TextField textField;
     @FXML private Button searchBut;
     @FXML private Button genBut;
+    @FXML private Button openBut;
     @FXML private Button expBut;
     @FXML private Button collBut;
     @FXML private Button exitBut;
@@ -102,6 +105,7 @@ public class ViewControl {
     	    			expBut.setDisable(false);
     	    			collBut.setDisable(false);
     	    			genBut.setDisable(false);
+    	    			openBut.setDisable(false);
     	    		}
     	    	});
     	    	return true;
@@ -147,6 +151,7 @@ public class ViewControl {
     	exitBut.setOnAction(e -> {
     		stage.close();
     	});
+    	
     	searchBut.setOnAction(e -> {
     		if (!PackageControl.validateURL(textField.getText()))
     			return;
@@ -161,16 +166,22 @@ public class ViewControl {
     		}
     		aControl.showAuthDialog();
     	});
+    	
     	expBut.setOnAction(e -> tControl.expandAll());
     	expBut.setDisable(true);
+    	
     	collBut.setOnAction(e -> tControl.collapseAll());
     	collBut.setDisable(true);
+    	
     	genBut.setOnAction(e -> {
     		FileChooser chooser = new FileChooser();
     		chooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Compressed", ".zip"));
     		chooser.setInitialDirectory(sJson.getDefSave().toFile()); 
     		File target = chooser.showSaveDialog(stage);
     		if (target!=null) {
+    			sJson.setDefSave(target.toPath().getParent());
+    			sJson.storeJson();
+    			sControl.resumeFields();
     			Task<Boolean> task = new Task<Boolean>() {
     	    	    @Override public Boolean call() {
     	    	        // do your operation in here
@@ -181,11 +192,27 @@ public class ViewControl {
 
     	    	task.setOnRunning((e1) -> lControl.show("Exporting from svn..."));
     	    	task.setOnSucceeded((e1) -> lControl.hide());
-    	    	task.setOnFailed((e1) -> lControl.hide());
+    	    	task.setOnFailed((e1) -> {
+    	    		lControl.hide();
+    	    		if (e1.getSource().getException() instanceof IllegalStateException) {
+    	    			showMessage("Wrapper Error", e1.getSource().getException().getMessage());
+    	    		}
+    	    	});
     	    	new Thread(task).start();
     		}
     	});
     	genBut.setDisable(true);
+    	
+    	openBut.setOnAction(e -> {
+    		Path file = tControl.getTable().getSelectionModel().getSelectedItem().getValue().getFile();
+    		if (Desktop.isDesktopSupported())
+				try {
+					Desktop.getDesktop().open(file.toFile());
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+    	});
+    	openBut.setDisable(true);
     }
 
     public String getText() {

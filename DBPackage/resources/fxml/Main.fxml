@@ -63,6 +63,15 @@
 				        </ImageView>
 				      </graphic>
 				  </Button>
+				  <Button fx:id="openBut" mnemonicParsing="false" text="Open File">
+                  	<graphic>
+				        <ImageView fitHeight="20" fitWidth="20" pickOnBounds="true" preserveRatio="true">
+				          <image>
+				            <Image url="/file.png" />
+				          </image>
+				        </ImageView>
+				      </graphic>
+				  </Button>
 				  <Button fx:id="expBut" mnemonicParsing="false" text="Expand All">
                   	<graphic>
 				        <ImageView fitHeight="20" fitWidth="20" pickOnBounds="true" preserveRatio="true">

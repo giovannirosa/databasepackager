@@ -18,9 +18,10 @@ public class UpdateModel {
 	private SVNDirEntry entry;
 	private List<SVNDirEntry> childs;
 	private Path local;
+	private Path descFile;
 
 	public UpdateModel(int number, String name, boolean selected, long revision, String tasks, String author,
-			LocalDateTime date, SVNDirEntry entry, List<SVNDirEntry> childs, Path local) {
+			LocalDateTime date, SVNDirEntry entry, List<SVNDirEntry> childs, Path local, Path descFile) {
 		super();
 		this.number = number;
 		this.name = name;
@@ -32,6 +33,7 @@ public class UpdateModel {
 		this.entry = entry;
 		this.childs = childs;
 		this.setLocal(local);
+		this.setDescFile(descFile);
 	}
 
 	public String getName() {
@@ -112,5 +114,13 @@ public class UpdateModel {
 
 	public void setLocal(Path local) {
 		this.local = local;
+	}
+
+	public Path getDescFile() {
+		return descFile;
+	}
+
+	public void setDescFile(Path descFile) {
+		this.descFile = descFile;
 	}
 }
